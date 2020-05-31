@@ -143,6 +143,11 @@ levels(master.sum$N) <- c("Total Population = 10",
                           "Total Population = 1000",
                           "Total Population = 10000")
 
+#Changing order of levels for plot
+master.sum$i <- factor(master.sum$i, levels = c("Init. Proportion of A = .7",
+                                                "Init. Proportion of A = .5",
+                                                "Init. Proportion of A = .3")) 
+
 
 
 
@@ -161,6 +166,7 @@ fig.1 <- ggplot(master.sum, aes(x = time, y = mean, color=R,
   guides(fill = guide_legend(reverse = TRUE),
          color = guide_legend(reverse = TRUE))
 
+#Saving as PNG
 ggsave("Moran_Eash.png", plot = fig.1,
        scale = 1, width = 12, height = 8, units = "in",
        dpi = 400)
