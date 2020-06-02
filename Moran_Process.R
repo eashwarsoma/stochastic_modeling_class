@@ -252,6 +252,7 @@ master.sum$i <- as.factor(master.sum$i)
 master.sum$N <- as.factor(master.sum$N)
 master.sum$R <- as.factor(master.sum$R)
 
+
 #Naming Things Well
 levels(master.sum$i) <- c("Init. Proportion of A = .3",
                           "Init. Proportion of A = .5",
@@ -268,14 +269,12 @@ master.sum$i <- factor(master.sum$i, levels = c("Init. Proportion of A = .7",
                                                 "Init. Proportion of A = .3")) 
 
 
-ggplot(master.sum, aes(x = R, y = V1)) +
+ggplot(master.sum, aes(x = R, y = V1, color = i)) +
   scale_y_continuous(trans='log10') +
   geom_boxplot(outlier.shape = NA) +
-  facet_grid(i ~ N) +
-  labs(color = "Fitness Ratio \nof A/B",
-       fill = "Fitness Ratio \nof A/B",
+  facet_grid(~N) +
+  labs(color = "Initial Proportion of A",
        x = "Relative Fitness of A over B",
        y = "Average Extinction Time (LOG SCALE)",
        subtitle = "")  
 
-mean(extinguisher(7, 10, 1, 1, 2000))
