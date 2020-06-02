@@ -269,7 +269,7 @@ master.sum$i <- factor(master.sum$i, levels = c("Init. Proportion of A = .7",
                                                 "Init. Proportion of A = .3")) 
 
 
-ggplot(master.sum, aes(x = R, y = V1, color = i)) +
+fig.2 <- ggplot(master.sum, aes(x = R, y = V1, color = i)) +
   scale_y_continuous(trans='log10') +
   geom_boxplot(outlier.shape = NA) +
   facet_grid(~N) +
@@ -277,4 +277,9 @@ ggplot(master.sum, aes(x = R, y = V1, color = i)) +
        x = "Relative Fitness of A over B",
        y = "Average Extinction Time (LOG SCALE)",
        subtitle = "")  
+
+#Saving as PNG
+ggsave("extinct_time_Eash.png", plot = fig.2,
+       scale = 1, width = 16, height = 8, units = "in",
+       dpi = 400)
 
