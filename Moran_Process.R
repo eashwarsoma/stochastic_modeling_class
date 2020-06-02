@@ -1,7 +1,7 @@
 library(ggplot2)
 library(reshape2)
 
-
+####Functions####
 #Per time step, generates the new generation
 #i is population of A, N is total population
 #Ra and Rb are fitness of A and B
@@ -74,6 +74,41 @@ colnames(sum.mat) <- c("mean", "lower_bound", "upper_bound")
 return(as.data.frame(sum.mat))
 }
 
+extinguisher <- function (i, N, Ra, Rb, rep) {
+  #Matrix to capture time steps to extinction
+  mat <- matrix(nrow = rep, ncol = 1)
+  
+  #Retaining original i
+  orig.i <- i
+  
+
+  
+  #Run Moran Process Until i = 0 or i = N
+  for (x in 1:rep) {
+    #Start counter at 1, resets with each loop
+    #logic is that if at i = N or 0, takes 0 steps to fix
+    count <- 0
+    
+    #Reset i to original value
+    i <- orig.i
+    
+    while (i != 0 & i != N)
+    {
+      i <- generator(i, N = N, Ra = Ra, Rb = Rb)
+      count <- count + 1
+    }
+    
+    #Record value in capture matrix
+    mat[x, 1] <- count
+    
+  }
+  
+return(mat)  
+  
+}
+
+
+####Question 1: Basic Process over different N, N_0, and r####
 #testing this out
 test <- moran.process(1, 10, 1, 2, 10, 10000)
 
@@ -170,7 +205,77 @@ fig.1 <- ggplot(master.sum, aes(x = time, y = mean, color=R,
 ggsave("Moran_Eash.png", plot = fig.1,
        scale = 1, width = 12, height = 8, units = "in",
        dpi = 400)
- 
+
+####Question 2: Extinction Times over different N, N_0 and r####
+#Set of populations
+pop <- c(10, 50, 100, 500)
+
+#Set of initial proportions of A
+init.prop <- c(.3, .5, .7)
+
+rep <- 100
+
+vars <- as.data.frame(expand.grid(
+  N = pop,
+  i = init.prop, 
+  Ra = c(0.5, 0.75, 0.9, 0.99, 1, 1.01, 1.1, 1.5, 2),
+  Rb = 1, 
+  rep = 100))
+
+#True initial i based off proportion of N
+vars$i <- vars$i*vars$N
+
+#applying all the variables to function
+master <- mapply(extinguisher, i = vars$i, 
+                 N = vars$N, 
+                 Ra = vars$Ra, 
+                 Rb = vars$Rb, 
+                 rep = vars$rep, SIMPLIFY = FALSE)
+
+master.sum <- do.call(rbind, master)
+master.sum <- as.data.frame(master.sum)
+
+#Appending original variable  to the results
+for (q in 1:nrow(vars)) {
+  master.sum$i[(1+rep*(q-1)):(rep*q)] <- vars$i[q]
+  master.sum$N[(1+rep*(q-1)):(rep*q)] <- vars$N[q]
+  master.sum$R[(1+rep*(q-1)):(rep*q)] <- vars$Ra[q]
+  master.sum$rep[(1+rep*(q-1)):(rep*q)] <- 1:rep
+}
 
 
+#Converting i back to porpotion 
+master.sum$i <- master.sum$i/master.sum$N
 
+#Converting initial pop, total pop size, and fitness ratio to factors
+master.sum$i <- as.factor(master.sum$i)
+master.sum$N <- as.factor(master.sum$N)
+master.sum$R <- as.factor(master.sum$R)
+
+#Naming Things Well
+levels(master.sum$i) <- c("Init. Proportion of A = .3",
+                          "Init. Proportion of A = .5",
+                          "Init. Proportion of A = .7")
+
+levels(master.sum$N) <- c("Total Population = 10",
+                          "Total Population = 50",
+                          "Total Population = 100",
+                          "Total Population = 500")
+
+#Changing order of levels for plot
+master.sum$i <- factor(master.sum$i, levels = c("Init. Proportion of A = .7",
+                                                "Init. Proportion of A = .5",
+                                                "Init. Proportion of A = .3")) 
+
+
+ggplot(master.sum, aes(x = R, y = V1)) +
+  scale_y_continuous(trans='log10') +
+  geom_boxplot(outlier.shape = NA) +
+  facet_grid(i ~ N) +
+  labs(color = "Fitness Ratio \nof A/B",
+       fill = "Fitness Ratio \nof A/B",
+       x = "Relative Fitness of A over B",
+       y = "Average Extinction Time (LOG SCALE)",
+       subtitle = "")  
+
+mean(extinguisher(7, 10, 1, 1, 2000))
