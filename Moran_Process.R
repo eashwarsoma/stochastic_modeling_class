@@ -1,6 +1,7 @@
 library(ggplot2)
 library(reshape2)
-
+library(grid)
+library(gridExtra)
 ####Functions####
 #Per time step, generates the new generation
 #i is population of A, N is total population
@@ -74,6 +75,8 @@ colnames(sum.mat) <- c("mean", "lower_bound", "upper_bound")
 return(as.data.frame(sum.mat))
 }
 
+#Repeats generator function until i = 0 or N
+#Returns number of time steps to extinction for x reps
 extinguisher <- function (i, N, Ra, Rb, rep) {
   #Matrix to capture time steps to extinction
   mat <- matrix(nrow = rep, ncol = 1)
@@ -105,6 +108,97 @@ extinguisher <- function (i, N, Ra, Rb, rep) {
   
 return(mat)  
   
+}
+
+#Repeats generator function until i = N
+#If i = 0, restarts the function until i = N
+#Returns average number of time steps to fixation of i
+extinguisher.mut <- function (i, N, Ra, Rb, rep) {
+  #Matrix to capture time steps to extinction
+  mat <- matrix(nrow = rep, ncol = 1)
+  
+  #Retaining original i
+  orig.i <- i
+  
+  #Run Moran Process Until i = 0 or i = N
+  for (x in 1:rep) {
+    #Start counter at 0, resets with each loop
+    #logic is that if at i = N or 0, takes 0 steps to fix
+    count <- 0
+    
+    #Reset i to original value
+    i <- orig.i
+    
+    while (i != N) { #Keep loop going until i = N
+      i <- generator(i, N = N, Ra = Ra, Rb = Rb) #Generate new i
+      if (i == 0) { #if i goes extinct, gotta reset everything
+        count <- 0 #count resets to 0
+        i <- orig.i #i resets to original value
+      } else {
+        count <- count + 1 #If i didn't go to 0, add 1 to count
+      }
+    }
+    #Record value in capture matrix
+    mat[x, 1] <- count
+    
+  }
+  
+  #Returns average and standard deviation
+  return(c(mean(mat), sd(mat)))
+  
+}
+
+
+#Repeats generator function for a specified number of steps
+#Asks if extinction was reached
+#Reports proportion of reps that reached extinction 
+fixer <- function (i, N, Ra, Rb, rep, step) {
+#Sets counter to 0
+count <- 0
+
+#Record original i
+orig.i <- i
+
+  for (p in 1:rep) { #For how many ever reps
+    i <- orig.i #Ensure i is set to original value
+    for (q in 1:step) {
+      i <- generator(i, N = N, Ra = Ra, Rb = Rb) #Run Moran Process for specified steps
+    }
+    if (i == N | i == 0) { #if i reaches extinaction, add 1 to counter
+      count <- count + 1} else { #if it didn't, add zero to counter
+        count <- count + 0
+      }
+  }
+
+prop <- (count/rep) #Proportion of reps that reached extinction
+return(prop)
+}
+
+
+#Repeats generator function for a specified number of steps
+#Asks specifically if i (the mutant) has fixed
+#Reports proportion of reps that reached fixation of i
+fixer.mut <- function (i, N, Ra, Rb, rep) {
+  #Sets counter to 0
+  count <- 0
+  
+  #Record original i
+  orig.i <- i
+  
+  for (p in 1:rep) { #For how many ever reps
+    i <- orig.i #Ensure i is set to original value
+    while (i != 0 & i != N)
+    {
+      i <- generator(i, N = N, Ra = Ra, Rb = Rb)
+    }
+    if (i == N) { #if i reaches fixation, add 1 to counter
+      count <- count + 1} else { #if it didn't, add zero to counter
+        count <- count + 0
+      }
+  }
+  
+  prop <- (count/rep) #Proportion of reps that reached extinction
+  return(prop)
 }
 
 
@@ -282,4 +376,157 @@ fig.2 <- ggplot(master.sum, aes(x = R, y = V1, color = i)) +
 ggsave("extinct_time_Eash.png", plot = fig.2,
        scale = 1, width = 16, height = 8, units = "in",
        dpi = 400)
+
+#####Question 3: Recreating Graphs####
+#Graph 1 Fix probability vs Selective Advantage of Mutant
+#N = 50
+#Sims = 1500
+#A = 1
+#Selective Advtange ranges from 1 to 5 by .2
+#Standard Error of Proportion
+vars <- as.data.frame(expand.grid(
+  N = 50,
+  i = 1, 
+  Ra = seq(1, 5 ,.2),
+  Rb = 1, 
+  rep = 1000))
+
+fig3a.dat <- mapply(fixer.mut, i = vars$i, N = vars$N, 
+                    Ra = vars$Ra, Rb = vars$Rb, 
+                    rep = vars$rep, SIMPLIFY = TRUE)
+
+
+fig3a.dat.form <- as.data.frame(cbind(vars, fig3a.dat))
+fig3a.dat.form$err <- sqrt((fig3a.dat.form$fig3a.dat*(1-fig3a.dat.form$fig3a.dat))/fig3a.dat.form$rep)
+
+
+fig.3a <- ggplot(fig3a.dat.form, aes(x = Ra, y = fig3a.dat, 
+                                     ymin=fig3a.dat-err, ymax=fig3a.dat+err)) +
+  geom_point() + 
+  geom_ribbon(alpha=0.3, color = NA) +
+  labs(x = "Relative Fitness of Mutant A over B",
+       y = "Fixation Probability \n(1000 Simulations)",
+       subtitle = "") + 
+  annotate(geom="text", x=4, y=.1, label="N = 50 \nInitial Mutant A Population = 1",
+                                 color="black")
+
+fig.3a
+
+
+
+#Graph 2 Fix Time vs Selective Advantage of Mutant
+#N = 50
+#Rep = 50
+#A = 1
+#Selective Advtange ranges from 1 to 5 by .2
+#Standard Error of Mean
+vars <- as.data.frame(expand.grid(
+    N = 50,
+    i = 1, 
+    Ra = seq(1, 5 ,.2),
+    Rb = 1, 
+    rep = 1000))
+
+fig3b.dat <- mapply(extinguisher.mut, i = vars$i, N = vars$N, 
+                    Ra = vars$Ra, Rb = vars$Rb, 
+                    rep = vars$rep, SIMPLIFY = TRUE)
+
+fig3b.dat.form <- as.data.frame(cbind(vars, t(fig3b.dat)))
+colnames(fig3b.dat.form) <- c("N", "i", "Ra", "Rb", 
+                              "rep", "mean", "sd") 
+
+fig3b.dat.form$sderr <- fig3b.dat.form$sd/sqrt(fig3b.dat.form$rep)
+
+
+fig.3b <- ggplot(fig3b.dat.form, aes(x = Ra, y = mean, 
+                                     ymin=mean-sderr, ymax=mean+sderr)) +
+  scale_y_continuous(trans='log10') +
+  geom_point() + 
+  geom_ribbon(alpha=0.3, color = NA) +
+  labs(x = "Relative Fitness of Mutant A over B",
+       y = "Fixation Time if \nMutant A Fixes (1000 Simulations)",
+       subtitle = "") + 
+  annotate(geom="text", x=4.2, y=2000, label="N = 50 \nInitial Mutant A Population = 1",
+           color="black")
+
+fig.3b
+
+#Graph 3 Fix probability vs Population Size
+#Fitness = 1.1
+#A = 1
+#Sims = 50
+#Population Size from 0 to 100 by 5
+#Standard Error of Proportion
+vars <- as.data.frame(expand.grid(
+  N = seq(5, 100 , 5),
+  i = 1, 
+  Ra = 1.1,
+  Rb = 1, 
+  rep = 2000))
+
+fig3c.dat <- mapply(fixer.mut, i = vars$i, N = vars$N, 
+                    Ra = vars$Ra, Rb = vars$Rb, 
+                    rep = vars$rep, SIMPLIFY = TRUE)
+
+
+fig3c.dat.form <- as.data.frame(cbind(vars, fig3c.dat))
+fig3c.dat.form$err <- sqrt((fig3c.dat.form$fig3c.dat*(1-fig3c.dat.form$fig3c.dat))/fig3c.dat.form$rep)
+
+
+fig.3c <- ggplot(fig3c.dat.form, aes(x = N, y = fig3c.dat, 
+                                     ymin=fig3c.dat-err, ymax=fig3c.dat+err)) +
+  geom_point() + 
+  geom_ribbon(alpha=0.3, color = NA) +
+  labs(x = "Total Population",
+       y = "Fixation Probability \n(2000 Simulations)",
+       subtitle = "") + 
+  annotate(geom="text", x=75, y=.15, label="R = 1.1 \nInitial Mutant A Population = 1",
+           color="black")
+
+fig.3c
+
+#Graph 3 Fix Time vs Population Size
+#Fitness = 1.1
+#A = 1
+#Rep = 50
+#Population Size from 0 to 100 by 5
+#Standard Error of Mean
+vars <- as.data.frame(expand.grid(
+  N = seq(5, 100 , 5),
+  i = 1, 
+  Ra = 1.1,
+  Rb = 1, 
+  rep = 100))
+
+fig3d.dat <- mapply(extinguisher.mut, i = vars$i, N = vars$N, 
+                    Ra = vars$Ra, Rb = vars$Rb, 
+                    rep = vars$rep, SIMPLIFY = TRUE)
+
+fig3d.dat.form <- as.data.frame(cbind(vars, t(fig3d.dat)))
+colnames(fig3d.dat.form) <- c("N", "i", "Ra", "Rb", 
+                              "rep", "mean", "sd") 
+
+fig3d.dat.form$sderr <- fig3d.dat.form$sd/sqrt(fig3d.dat.form$rep)
+
+
+fig.3d <- ggplot(fig3d.dat.form, aes(x = N, y = mean, 
+                                     ymin=mean-sderr, ymax=mean+sderr)) +
+  scale_y_continuous(trans='log10') +
+  geom_point() + 
+  geom_ribbon(alpha=0.3, color = NA) +
+  labs(x = "Total Population",
+       y = "Fixation Time if \nMutant A Fixes (100 Simulations)",
+       subtitle = "") + 
+  annotate(geom="text", x=75, y=1000, label="R = 1.1 \nInitial Mutant A Population = 1",
+           color="black")
+
+fig.3d
+
+
+png(filename = "Eash_frean_traulsen_fig_recreate.png",
+    width = 14, height = 8, units = "in", res = 600)
+
+grid.arrange(fig.3a, fig.3c, fig.3b, fig.3d, ncol = 2)
+
+dev.off()
 
