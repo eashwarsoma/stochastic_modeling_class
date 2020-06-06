@@ -480,7 +480,7 @@ fig.3c <- ggplot(fig3c.dat.form, aes(x = N, y = fig3c.dat,
   labs(x = "Total Population",
        y = "Fixation Probability \n(2000 Simulations)",
        subtitle = "") + 
-  annotate(geom="text", x=75, y=.15, label="R = 1.1 \nInitial Mutant A Population = 1",
+  annotate(geom="text", x=75, y=.45, label="R = 1.1 \nInitial Mutant A Population = 1",
            color="black")
 
 fig.3c
@@ -517,10 +517,16 @@ fig.3d <- ggplot(fig3d.dat.form, aes(x = N, y = mean,
   labs(x = "Total Population",
        y = "Fixation Time if \nMutant A Fixes (100 Simulations)",
        subtitle = "") + 
-  annotate(geom="text", x=75, y=1000, label="R = 1.1 \nInitial Mutant A Population = 1",
+  annotate(geom="text", x=75, y=300, label="R = 1.1 \nInitial Mutant A Population = 1",
            color="black")
 
 fig.3d
+
+#Correcting scales
+fig.3a <- fig.3a + ylim(0, 1)
+fig.3c <- fig.3c + ylim(0, 1)
+fig.3b <- fig.3b + scale_y_continuous(trans='log10', limits = c(3, 7000))
+fig.3d <- fig.3d + scale_y_continuous(trans='log10', limits = c(3, 7000))
 
 
 png(filename = "Eash_frean_traulsen_fig_recreate.png",
