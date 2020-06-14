@@ -435,7 +435,7 @@ fig3b.dat.form <- as.data.frame(cbind(vars, t(fig3b.dat)))
 colnames(fig3b.dat.form) <- c("N", "i", "Ra", "Rb", 
                               "rep", "mean", "sd") 
 
-fig3b.dat.form$sderr <- fig3b.dat.form$sd/sqrt(fig3b.dat.form$rep)
+fig3b.dat.form$sderr <- fig3b.dat.form$sd
 
 
 fig.3b <- ggplot(fig3b.dat.form, aes(x = Ra, y = mean, 
@@ -506,7 +506,7 @@ fig3d.dat.form <- as.data.frame(cbind(vars, t(fig3d.dat)))
 colnames(fig3d.dat.form) <- c("N", "i", "Ra", "Rb", 
                               "rep", "mean", "sd") 
 
-fig3d.dat.form$sderr <- fig3d.dat.form$sd/sqrt(fig3d.dat.form$rep)
+fig3d.dat.form$sderr <- fig3d.dat.form$sd
 
 
 fig.3d <- ggplot(fig3d.dat.form, aes(x = N, y = mean, 
@@ -525,8 +525,8 @@ fig.3d
 #Correcting scales
 fig.3a <- fig.3a + ylim(0, 1)
 fig.3c <- fig.3c + ylim(0, 1)
-fig.3b <- fig.3b + scale_y_continuous(trans='log10', limits = c(3, 7000))
-fig.3d <- fig.3d + scale_y_continuous(trans='log10', limits = c(3, 7000))
+fig.3b <- fig.3b + scale_y_continuous(trans='log10', limits = c(3, 9000))
+fig.3d <- fig.3d + scale_y_continuous(trans='log10', limits = c(3, 9000))
 
 
 png(filename = "Eash_frean_traulsen_fig_recreate.png",
