@@ -536,3 +536,25 @@ grid.arrange(fig.3a, fig.3c, fig.3b, fig.3d, ncol = 2)
 
 dev.off()
 
+####Timing Code####
+library(microbenchmark)
+#Benchmarking A moran process that lasts for 5000 generations repeated 10 times
+#Repeat Benchmark 10 times and take average
+moran.process(i = 5, N = 10, Ra = 1.1, Rb = 1, rep = 10, step = 5000)
+
+
+bench.N10 <- microbenchmark(moran.process(i = 1, N = 10, 
+                              Ra = 1.1, Rb = 1, 
+                              rep = 10, step = 5000), times = 10)
+print(bench.N10)
+
+bench.N100 <- microbenchmark(moran.process(i = 1, N = 100, 
+                                          Ra = 1.1, Rb = 1, 
+                                          rep = 10, step = 5000), times = 10)
+print(bench.N100)
+
+bench.N1000 <- microbenchmark(moran.process(i = 1, N = 1000, 
+                                           Ra = 1.1, Rb = 1, 
+                                           rep = 10, step = 5000), times = 10)
+print(bench.N1000)
+
